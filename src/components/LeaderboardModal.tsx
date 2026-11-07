@@ -73,6 +73,12 @@ export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({
           <h2 className="text-2xl sm:text-3xl font-black text-amber-950">
             꼬마 한글 챔피언 🏆
           </h2>
+          <div className="flex items-center justify-center gap-1.5 mt-1">
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold border border-emerald-300">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+              <span>Firebase 클라우드 실시간 연동 중</span>
+            </span>
+          </div>
           <p className="text-xs sm:text-sm font-bold text-stone-600 mt-1">
             문제를 맞히고 나비를 모을수록 순위가 쑥쑥 올라가요!
           </p>

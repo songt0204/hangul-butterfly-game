@@ -4,6 +4,7 @@ import { BUTTERFLIES } from './data/butterflies';
 import { getQuizzesForStage } from './data/quizData';
 import { sound } from './utils/audio';
 import { speech } from './utils/speech';
+import { subscribeToLeaderboard, savePlayerScoreToFirestore } from './utils/firebase';
 
 import { Header } from './components/Header';
 import { StageProgressBar } from './components/StageProgressBar';
@@ -14,6 +15,7 @@ import { ButterflyBirthModal } from './components/ButterflyBirthModal';
 import { ButterflyCollectionModal } from './components/ButterflyCollectionModal';
 import { ConsonantChartModal } from './components/ConsonantChartModal';
 import { LeaderboardModal } from './components/LeaderboardModal';
+import { Trophy, ChevronRight } from 'lucide-react';
 
 const STORAGE_KEY = 'hangul_butterflies_v1';
 const LEADERBOARD_KEY = 'hangul_leaderboard_v1';
@@ -57,7 +59,7 @@ export default function App() {
     return [{ butterflyId: 'tiger_swallowtail', collectedAt: new Date().toISOString() }];
   });
 
-  // Leaderboard State
+  // Leaderboard State (Synchronized with Google Firebase Firestore in real-time)
   const [leaderboardEntries, setLeaderboardEntries] = useState<LeaderboardEntry[]>(() => {
     try {
       const stored = localStorage.getItem(LEADERBOARD_KEY);
@@ -69,6 +71,30 @@ export default function App() {
     }
     return DEFAULT_LEADERBOARD;
   });
+
+  // Subscribe to Firebase Firestore real-time updates
+  useEffect(() => {
+    const unsubscribe = subscribeToLeaderboard((cloudEntries) => {
+      if (cloudEntries && cloudEntries.length > 0) {
+        const myLocalPlayerId = localStorage.getItem('hangul_player_id');
+        const formatted: LeaderboardEntry[] = cloudEntries.map((e) => ({
+          ...e,
+          isCurrentPlayer: myLocalPlayerId ? e.id === myLocalPlayerId : false,
+        }));
+
+        // Merge with preset champions so the board always looks populated and fun
+        const combined: LeaderboardEntry[] = [...formatted];
+        DEFAULT_LEADERBOARD.forEach((preset) => {
+          if (!combined.some((c) => c.name === preset.name)) {
+            combined.push({ ...preset, isCurrentPlayer: false });
+          }
+        });
+        setLeaderboardEntries(combined);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Pick target butterfly to hatch for this journey
   const selectNextTargetButterfly = useCallback((currentCollected: CollectedButterfly[]): Butterfly => {
@@ -105,7 +131,22 @@ export default function App() {
 
   // Handle Correct Answer
   const handleAnswerCorrect = () => {
-    setScore((prev) => prev + 1);
+    const newScore = score + 1;
+    setScore(newScore);
+
+    // Auto sync to Firestore if user already registered a player id
+    const existingPlayerId = localStorage.getItem('hangul_player_id');
+    const existingPlayerName = localStorage.getItem('hangul_player_name');
+    const existingAvatar = localStorage.getItem('hangul_player_avatar') || '🦋';
+    if (existingPlayerId && existingPlayerName) {
+      savePlayerScoreToFirestore({
+        id: existingPlayerId,
+        name: existingPlayerName,
+        avatar: existingAvatar,
+        score: newScore,
+        butterfliesCount: collectedButterflies.length,
+      }).catch(() => {});
+    }
 
     if (questionIndex < 9) {
       setQuestionIndex((prev) => prev + 1);
@@ -179,11 +220,18 @@ export default function App() {
     setTargetButterfly(next);
   };
 
-  // Save or update player's record on leaderboard
-  const handleSaveLeaderboardRecord = (name: string, avatar: string) => {
-    const playerEntryId = 'player-current';
+  // Save or update player's record on Firebase & Leaderboard
+  const handleSaveLeaderboardRecord = async (name: string, avatar: string) => {
+    let playerId = localStorage.getItem('hangul_player_id');
+    if (!playerId) {
+      playerId = 'player_' + Math.random().toString(36).substring(2, 9);
+      localStorage.setItem('hangul_player_id', playerId);
+    }
+    localStorage.setItem('hangul_player_name', name);
+    localStorage.setItem('hangul_player_avatar', avatar);
+
     const newEntry: LeaderboardEntry = {
-      id: playerEntryId,
+      id: playerId,
       name,
       avatar,
       score,
@@ -192,14 +240,22 @@ export default function App() {
       isCurrentPlayer: true,
     };
 
-    const filtered = leaderboardEntries.filter((e) => e.id !== playerEntryId);
+    // Update local state immediately
+    const filtered = leaderboardEntries.filter((e) => e.id !== playerId);
     const updated = [newEntry, ...filtered];
     setLeaderboardEntries(updated);
 
     try {
       localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(updated));
     } catch {
-      // Storage error fallback
+      // Storage fallback
+    }
+
+    // Real-time synchronization to Google Firebase Firestore!
+    try {
+      await savePlayerScoreToFirestore(newEntry);
+    } catch (err) {
+      console.error('Firebase save error:', err);
     }
   };
 
@@ -233,7 +289,43 @@ export default function App() {
 
       {/* Main Content Area */}
       <main className="flex-1 w-full max-w-4xl mx-auto flex flex-col items-center justify-start pt-2 sm:pt-4">
-        {/* 2. 3-Stage Progress Bar & 10 Questions Dots */}
+        {/* 2. Front Screen Link to Leaderboard */}
+        <div className="w-full max-w-2xl px-4 mb-2">
+          <button
+            onClick={() => {
+              sound.playPop();
+              setShowLeaderboardModal(true);
+            }}
+            className="w-full group rounded-2xl bg-linear-to-r from-amber-100/90 via-yellow-100 to-orange-100/80 border-2 border-amber-300 hover:border-amber-400 p-2.5 sm:p-3 flex items-center justify-between shadow-xs transition-all hover:shadow-md active:scale-98 cursor-pointer"
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white border border-amber-300 flex items-center justify-center text-xl sm:text-2xl shadow-2xs group-hover:rotate-6 transition-transform">
+                <Trophy className="w-5 h-5 text-amber-600" />
+              </div>
+              <div className="text-left">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs sm:text-sm font-black text-amber-950">
+                    실시간 명예의 전당 (리더보드)
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-black animate-pulse">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                    LIVE
+                  </span>
+                </div>
+                <p className="text-[11px] text-amber-800 font-bold">
+                  내 실시간 점수와 다른 친구들의 랭킹 확인하기 ➔
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1 text-xs font-black text-amber-900 bg-white/90 px-3 py-1.5 rounded-xl border border-amber-200 group-hover:bg-amber-400 group-hover:text-amber-950 transition-colors shrink-0">
+              <span>순위 보기</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </div>
+          </button>
+        </div>
+
+        {/* 3. 3-Stage Progress Bar & 10 Questions Dots */}
         <StageProgressBar
           currentStage={stage}
           questionIndex={questionIndex}
@@ -241,14 +333,14 @@ export default function App() {
           score={score}
         />
 
-        {/* 3. Stage Growth Visual (Egg / Pupa / Butterfly) */}
+        {/* 4. Stage Growth Visual (Egg / Pupa / Butterfly) */}
         <StageVisual
           stage={stage}
           questionIndex={questionIndex}
           nextButterfly={targetButterfly}
         />
 
-        {/* 4. Active Question Card (3 Distinct Progressive Game Types) */}
+        {/* 5. Active Question Card (3 Distinct Progressive Game Types) */}
         <QuizCard
           key={`${stage}-${questionIndex}-${gameCycleCount}`}
           quiz={currentQuiz}
@@ -292,7 +384,7 @@ export default function App() {
         <ConsonantChartModal onClose={() => setShowConsonantChartModal(false)} />
       )}
 
-      {/* 🏆 Leaderboard Modal (명예의 전당) */}
+      {/* 🏆 Leaderboard Modal (명예의 전당) with Firebase Real-time sync */}
       {showLeaderboardModal && (
         <LeaderboardModal
           entries={leaderboardEntries}

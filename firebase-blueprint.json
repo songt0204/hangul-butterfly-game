@@ -1,0 +1,43 @@
+{
+  "entities": {
+    "LeaderboardEntry": {
+      "title": "LeaderboardEntry",
+      "description": "A player score record on the real-time leaderboard",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Player nickname or name",
+          "maxLength": 20,
+          "minLength": 1
+        },
+        "avatar": {
+          "type": "string",
+          "description": "Player avatar emoji",
+          "maxLength": 10
+        },
+        "score": {
+          "type": "integer",
+          "description": "Total solved questions score"
+        },
+        "butterfliesCount": {
+          "type": "integer",
+          "description": "Total collected butterflies"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp in ISO format"
+        }
+      },
+      "required": ["name", "avatar", "score", "butterfliesCount"]
+    }
+  },
+  "firestore": {
+    "/leaderboard/{entryId}": {
+      "schema": {
+        "$ref": "#/entities/LeaderboardEntry"
+      },
+      "description": "Public leaderboard collection for preschool game players"
+    }
+  }
+}
