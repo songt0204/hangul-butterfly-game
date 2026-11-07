@@ -1,0 +1,6 @@
+{
+  "name": "꼬물이 한글놀이: 알에서 나비까지",
+  "description": "만4세 유아를 위한 재미있는 한글 자음 찾기 놀이! 1단계 알, 2단계 번데기, 3단계 나비로 성장하며 다양한 나비를 모으는 한글 학습 게임",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

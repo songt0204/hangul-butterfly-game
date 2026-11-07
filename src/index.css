@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Jua', 'Noto Sans KR', sans-serif;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@keyframes eggWobble {
+  0%, 100% {
+    transform: rotate(0deg) scale(1);
+  }
+  25% {
+    transform: rotate(-6deg) scale(1.04);
+  }
+  75% {
+    transform: rotate(6deg) scale(1.04);
+  }
+}
+
+@keyframes pupaBreathe {
+  0%, 100% {
+    transform: scale(1) translateY(0);
+  }
+  50% {
+    transform: scale(1.05, 0.95) translateY(4px);
+  }
+}
+
+@keyframes wingFlutter {
+  0%, 100% {
+    transform: scaleX(1);
+  }
+  50% {
+    transform: scaleX(0.25);
+  }
+}
+
+@keyframes gentleFloat {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(2deg);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.5));
+  }
+  50% {
+    filter: drop-shadow(0 0 24px rgba(251, 191, 36, 0.9));
+  }
+}
+
+.animate-egg-wobble {
+  animation: eggWobble 1.6s ease-in-out infinite;
+}
+
+.animate-pupa-breathe {
+  animation: pupaBreathe 2s ease-in-out infinite;
+}
+
+.animate-wing-flutter {
+  animation: wingFlutter 0.3s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.animate-gentle-float {
+  animation: gentleFloat 3s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 1.8s ease-in-out infinite;
+}
