@@ -55,3 +55,13 @@ export interface CollectedButterfly {
   butterflyId: string;
   collectedAt: string;
 }
+
+export interface LeaderboardEntry {
+  id: string;
+  name: string; // 꼬마 탐험가 닉네임 (예: "씩씩한 호랑이", "지우")
+  avatar: string; // 캐릭터 이모지 (예: 🦁, 🐰, 🦋, 🐥, 🐻)
+  score: number; // 퀴즈 정답 수 / 별점
+  butterfliesCount: number; // 모은 나비 마리 수
+  date: string;
+  isCurrentPlayer?: boolean;
+}

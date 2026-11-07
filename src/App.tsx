@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { StageId, QuizItem, Butterfly, CollectedButterfly } from './types';
+import { StageId, QuizItem, Butterfly, CollectedButterfly, LeaderboardEntry } from './types';
 import { BUTTERFLIES } from './data/butterflies';
 import { getQuizzesForStage } from './data/quizData';
 import { sound } from './utils/audio';
@@ -13,8 +13,19 @@ import { LevelUpModal } from './components/LevelUpModal';
 import { ButterflyBirthModal } from './components/ButterflyBirthModal';
 import { ButterflyCollectionModal } from './components/ButterflyCollectionModal';
 import { ConsonantChartModal } from './components/ConsonantChartModal';
+import { LeaderboardModal } from './components/LeaderboardModal';
 
 const STORAGE_KEY = 'hangul_butterflies_v1';
+const LEADERBOARD_KEY = 'hangul_leaderboard_v1';
+
+const DEFAULT_LEADERBOARD: LeaderboardEntry[] = [
+  { id: 'lb-1', name: '나비박사 다람이', avatar: '🐿️', score: 30, butterfliesCount: 10, date: '2026-11-01' },
+  { id: 'lb-2', name: '씩씩한 호랑이', avatar: '🐯', score: 26, butterfliesCount: 8, date: '2026-11-02' },
+  { id: 'lb-3', name: '방긋방긋 토끼', avatar: '🐰', score: 22, butterfliesCount: 7, date: '2026-11-03' },
+  { id: 'lb-4', name: '삐약이 꼬물이', avatar: '🐥', score: 18, butterfliesCount: 5, date: '2026-11-04' },
+  { id: 'lb-5', name: '꿀벌 곰돌이', avatar: '🐻', score: 14, butterfliesCount: 3, date: '2026-11-05' },
+  { id: 'lb-6', name: '야옹이 친구', avatar: '🐱', score: 10, butterfliesCount: 2, date: '2026-11-06' },
+];
 
 export default function App() {
   const [stage, setStage] = useState<StageId>(1);
@@ -31,6 +42,7 @@ export default function App() {
   const [showBirthModal, setShowBirthModal] = useState<boolean>(false);
   const [showCollectionModal, setShowCollectionModal] = useState<boolean>(false);
   const [showConsonantChartModal, setShowConsonantChartModal] = useState<boolean>(false);
+  const [showLeaderboardModal, setShowLeaderboardModal] = useState<boolean>(false);
 
   // Collected Butterflies State
   const [collectedButterflies, setCollectedButterflies] = useState<CollectedButterfly[]>(() => {
@@ -42,8 +54,20 @@ export default function App() {
     } catch {
       // Fallback
     }
-    // Give child the 1st butterfly (호랑나비) as initial welcoming gift so collection isn't empty
     return [{ butterflyId: 'tiger_swallowtail', collectedAt: new Date().toISOString() }];
+  });
+
+  // Leaderboard State
+  const [leaderboardEntries, setLeaderboardEntries] = useState<LeaderboardEntry[]>(() => {
+    try {
+      const stored = localStorage.getItem(LEADERBOARD_KEY);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch {
+      // Fallback
+    }
+    return DEFAULT_LEADERBOARD;
   });
 
   // Pick target butterfly to hatch for this journey
@@ -71,13 +95,13 @@ export default function App() {
 
   // Auto-speak question on new quiz arrival if TTS is active
   useEffect(() => {
-    if (isTtsEnabled && !showLevelUpModal && !showBirthModal) {
+    if (isTtsEnabled && !showLevelUpModal && !showBirthModal && !showLeaderboardModal) {
       const timer = setTimeout(() => {
         speech.speak(currentQuiz.audioPrompt, 0.9, 1.15);
       }, 350);
       return () => clearTimeout(timer);
     }
-  }, [stage, questionIndex, isTtsEnabled, currentQuiz?.audioPrompt, showLevelUpModal, showBirthModal]);
+  }, [stage, questionIndex, isTtsEnabled, currentQuiz?.audioPrompt, showLevelUpModal, showBirthModal, showLeaderboardModal]);
 
   // Handle Correct Answer
   const handleAnswerCorrect = () => {
@@ -151,8 +175,32 @@ export default function App() {
     setStage(1);
     setQuestionIndex(0);
     setGameCycleCount((c) => c + 1);
-    const next = BUTTERFLIES[1]; // Next is cabbage white
+    const next = BUTTERFLIES[1];
     setTargetButterfly(next);
+  };
+
+  // Save or update player's record on leaderboard
+  const handleSaveLeaderboardRecord = (name: string, avatar: string) => {
+    const playerEntryId = 'player-current';
+    const newEntry: LeaderboardEntry = {
+      id: playerEntryId,
+      name,
+      avatar,
+      score,
+      butterfliesCount: collectedButterflies.length,
+      date: new Date().toISOString().split('T')[0],
+      isCurrentPlayer: true,
+    };
+
+    const filtered = leaderboardEntries.filter((e) => e.id !== playerEntryId);
+    const updated = [newEntry, ...filtered];
+    setLeaderboardEntries(updated);
+
+    try {
+      localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(updated));
+    } catch {
+      // Storage error fallback
+    }
   };
 
   // Toggle Sound
@@ -169,12 +217,13 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-linear-to-b from-amber-50/70 via-emerald-50/30 to-amber-100/40 text-stone-800 flex flex-col font-sans pb-10">
-      {/* 1. Header Bar */}
+      {/* 1. Header Bar with Leaderboard Trophy */}
       <Header
         collectedCount={collectedButterflies.length}
         totalButterflies={BUTTERFLIES.length}
         onOpenCollection={() => setShowCollectionModal(true)}
         onOpenConsonantChart={() => setShowConsonantChartModal(true)}
+        onOpenLeaderboard={() => setShowLeaderboardModal(true)}
         onRestartCurrentGame={handleRestartCurrentGame}
         isMuted={isMuted}
         onToggleMute={handleToggleMute}
@@ -241,6 +290,17 @@ export default function App() {
       {/* Consonant Sound Playground (ㄱ~ㅎ 14개) */}
       {showConsonantChartModal && (
         <ConsonantChartModal onClose={() => setShowConsonantChartModal(false)} />
+      )}
+
+      {/* 🏆 Leaderboard Modal (명예의 전당) */}
+      {showLeaderboardModal && (
+        <LeaderboardModal
+          entries={leaderboardEntries}
+          currentScore={score}
+          collectedCount={collectedButterflies.length}
+          onSaveRecord={handleSaveLeaderboardRecord}
+          onClose={() => setShowLeaderboardModal(false)}
+        />
       )}
     </div>
   );

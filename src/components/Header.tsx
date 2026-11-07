@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Volume2, VolumeX, Sparkles, BookOpen, Mic, MicOff, RotateCcw } from 'lucide-react';
+import { Volume2, VolumeX, Sparkles, BookOpen, Mic, MicOff, RotateCcw, Trophy } from 'lucide-react';
 import { sound } from '../utils/audio';
 
 interface HeaderProps {
@@ -7,6 +7,7 @@ interface HeaderProps {
   totalButterflies: number;
   onOpenCollection: () => void;
   onOpenConsonantChart: () => void;
+  onOpenLeaderboard: () => void;
   onRestartCurrentGame: () => void;
   isMuted: boolean;
   onToggleMute: () => void;
@@ -19,6 +20,7 @@ export const Header: React.FC<HeaderProps> = ({
   totalButterflies,
   onOpenCollection,
   onOpenConsonantChart,
+  onOpenLeaderboard,
   onRestartCurrentGame,
   isMuted,
   onToggleMute,
@@ -32,7 +34,7 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="max-w-5xl mx-auto px-3 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-2 sm:gap-4">
         {/* Brand / Logo */}
         <div className="flex items-center gap-2 sm:gap-3">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-amber-400 to-orange-400 flex items-center justify-center shadow-md shadow-amber-300/40 text-xl sm:text-2xl transform hover:rotate-6 transition-transform">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-linear-to-tr from-amber-400 to-orange-400 flex items-center justify-center shadow-md shadow-amber-300/40 text-xl sm:text-2xl transform hover:rotate-6 transition-transform">
             🦋
           </div>
           <div>
@@ -47,17 +49,17 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Action Controls */}
         <div className="flex items-center gap-1 sm:gap-2">
-          {/* Quick Restart from Egg */}
+          {/* Leaderboard Trophy Button */}
           <button
             onClick={() => {
               sound.playPop();
-              setShowConfirm(true);
+              onOpenLeaderboard();
             }}
-            className="flex items-center gap-1 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs sm:text-sm border border-stone-200 shadow-xs transition-transform active:scale-95 cursor-pointer"
-            title="1단계 알부터 새로하기"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-yellow-50 hover:bg-yellow-100 text-yellow-900 border border-yellow-300 font-bold text-xs sm:text-sm shadow-xs transition-transform active:scale-95 cursor-pointer"
+            title="명예의 전당 (리더보드)"
           >
-            <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-stone-500" />
-            <span className="hidden sm:inline">새로하기</span>
+            <Trophy className="w-4 h-4 text-amber-600 animate-pulse" />
+            <span className="hidden xs:inline">명예의 전당</span>
           </button>
 
           {/* Consonant Sound Playground */}
@@ -66,11 +68,11 @@ export const Header: React.FC<HeaderProps> = ({
               sound.playPop();
               onOpenConsonantChart();
             }}
-            className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-800 border border-orange-200/70 font-bold text-xs sm:text-sm shadow-xs transition-transform active:scale-95 cursor-pointer"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-800 border border-orange-200/70 font-bold text-xs sm:text-sm shadow-xs transition-transform active:scale-95 cursor-pointer"
             title="자음 소리 마당 (ㄱ~ㅎ 듣기)"
           >
             <BookOpen className="w-4 h-4 text-orange-600" />
-            <span className="hidden xs:inline">자음 마당</span>
+            <span className="hidden md:inline">자음 마당</span>
           </button>
 
           {/* Butterfly Collection */}
@@ -79,14 +81,26 @@ export const Header: React.FC<HeaderProps> = ({
               sound.playPop();
               onOpenCollection();
             }}
-            className="flex items-center gap-1.5 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs sm:text-sm shadow-md shadow-amber-500/30 transition-transform active:scale-95 cursor-pointer"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs sm:text-sm shadow-md shadow-amber-500/30 transition-transform active:scale-95 cursor-pointer"
             title="내 나비 보관함 열기"
           >
-            <Sparkles className="w-4 h-4 text-yellow-200 animate-pulse" />
-            <span>나비 보관함</span>
+            <Sparkles className="w-4 h-4 text-yellow-200" />
+            <span className="hidden sm:inline">나비 보관함</span>
             <span className="bg-amber-700/50 text-white px-1.5 py-0.5 rounded-full text-[10px] sm:text-xs font-mono ml-0.5">
               {collectedCount}/{totalButterflies}
             </span>
+          </button>
+
+          {/* Quick Restart from Egg */}
+          <button
+            onClick={() => {
+              sound.playPop();
+              setShowConfirm(true);
+            }}
+            className="p-2 sm:px-2.5 sm:py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs sm:text-sm border border-stone-200 shadow-xs transition-transform active:scale-95 cursor-pointer"
+            title="1단계 알부터 새로하기"
+          >
+            <RotateCcw className="w-4 h-4 text-stone-500" />
           </button>
 
           {/* Sound Mute Toggle */}
